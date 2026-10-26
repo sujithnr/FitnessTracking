@@ -1,0 +1,10 @@
+.env
+tokens.json
+shoes.json
+*.db
+*.db-*
+.venv/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
