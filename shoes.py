@@ -45,8 +45,8 @@ def attribution(activity, cfg):
     matches = [
         item for item in cfg.get("cycles", [])
         if shoe and item["shoe_name"].casefold() == shoe.casefold()
-        and item["start_date"] <= run_date
+        and (not item.get("start_date") or item["start_date"] <= run_date)
         and (not item.get("retired_date") or run_date <= item["retired_date"])
     ]
-    matches.sort(key=lambda item: item["start_date"], reverse=True)
+    matches.sort(key=lambda item: item.get("start_date") or "", reverse=True)
     return workout, shoe, source, matches[0]["id"] if matches else None

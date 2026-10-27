@@ -1,0 +1,45 @@
+{
+  "defaults": {
+    "easy run": "Black Evo SL",
+    "warm up": "Rocket X2",
+    "cool down": "Rocket X2",
+    "track workout": "Rocket X2",
+    "tempo run": "Rocket X2",
+    "long run": "Skyflow",
+    "marathon workout": "Rocket X2",
+    "unknown": "Skyflow"
+  },
+  "cycles": [
+    {
+      "id": "rocket-x2-001",
+      "shoe_name": "Rocket X2",
+      "label": "Rocket X2 pair 1",
+      "start_date": null,
+      "retired_date": null
+    },
+    {
+      "id": "skyflow-001",
+      "shoe_name": "Skyflow",
+      "label": "Skyflow pair 1",
+      "start_date": null,
+      "retired_date": "2026-09-26",
+      "retired": true
+    },
+    {
+      "id": "evo-sl-001",
+      "shoe_name": "Evo SL",
+      "label": "Evo SL pair 1",
+      "start_date": null,
+      "retired_date": "2026-09-26",
+      "retired": true
+    },
+    {
+      "id": "black-evo-sl-001",
+      "shoe_name": "Black Evo SL",
+      "label": "Black Evo SL pair 1",
+      "start_date": "2026-09-26",
+      "retired_date": null,
+      "retired": false
+    }
+  ]
+}

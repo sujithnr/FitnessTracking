@@ -1,5 +1,6 @@
 import argparse
 import sqlite3
+import time
 from datetime import datetime, timedelta, timezone
 import requests
 
@@ -32,12 +33,29 @@ def connect():
 
 
 def fetch(session, path, **params):
-    response = session.get(API + path, params=params, timeout=45)
+    while True:
+        response = session.get(API + path, params=params, timeout=45)
+        if response.status_code != 429:
+            break
+        # Daily exhaustion needs a later run; short-window exhaustion can wait.
+        for prefix in ("X-ReadRateLimit", "X-RateLimit"):
+            limits = response.headers.get(prefix + "-Limit", "").split(",")
+            usage = response.headers.get(prefix + "-Usage", "").split(",")
+            if len(limits) == len(usage) == 2:
+                if int(usage[1]) >= int(limits[1]):
+                    response.raise_for_status()
+        delay = max(1, int(response.headers.get("Retry-After") or
+                           (900 - time.time() % 900 + 5)))
+        print(f"Strava read limit reached; resuming in {delay} seconds", flush=True)
+        while delay:
+            pause = min(delay, 60)
+            time.sleep(pause)
+            delay -= pause
     response.raise_for_status()
     return response.json()
 
 
-def sync(full=False, since=None):
+def sync(full=False, since=None, resume=False):
     cfg = config()
     session = requests.Session()
     session.headers["Authorization"] = "Bearer " + access_token()
@@ -60,6 +78,10 @@ def sync(full=False, since=None):
                 break
             for item in entries:
                 if item.get("type") != "Run" and item.get("sport_type") not in ("Run", "TrailRun", "VirtualRun"):
+                    continue
+                if resume and conn.execute(
+                    "SELECT 1 FROM activities WHERE strava_id = ?", (item["id"],)
+                ).fetchone():
                     continue
                 activity = fetch(session, "/activities/" + str(item["id"]))
                 workout, shoe, source, cycle = attribution(activity, cfg)
@@ -89,6 +111,7 @@ def sync(full=False, since=None):
                     datetime.now(timezone.utc).isoformat()
                 ))
                 count += 1
+                conn.commit()
             conn.commit()
             if len(entries) < 100:
                 break
@@ -103,5 +126,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--full", action="store_true", help="Resync all runs since May 11, 2026")
     parser.add_argument("--since", help="Earliest UTC day, YYYY-MM-DD")
+    parser.add_argument("--resume", action="store_true",
+                        help="Skip cached runs during an interrupted initial import; does not refresh them")
     args = parser.parse_args()
-    sync(full=args.full, since=args.since)
+    sync(full=args.full, since=args.since, resume=args.resume)

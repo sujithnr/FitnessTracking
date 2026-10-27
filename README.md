@@ -13,7 +13,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-cp shoes.example.json shoes.json
+# shoes.json is already tracked; use the example only if it is missing:
+cp -n shoes.example.json shoes.json
 ```
 
 Edit `.env` with your Strava client ID and secret. Edit `shoes.json` with your defaults and shoe cycles. Sample shoe dates are illustrative rather than confirmed personal history.
@@ -33,7 +34,21 @@ python sync.py --full
 
 You can override the date with `python sync.py --since 2026-01-01`. The default sync window is the most recent 30 days, bounded below by May 11, 2026. Past data stays in SQLite but is only updated when fetched again.
 
-Strava run descriptions override defaults when they include a line like `Shoe: Skyflow`. Shoe pair history lives in `shoes.json`; the SQLite cache is rebuildable. Keep a private backup of `shoes.json` to preserve shoe cycles.
+For an interrupted initial import, rerun the same date range with `--resume`.
+Each completed run is saved immediately, and cached runs are skipped to conserve
+Strava requests. Omit `--resume` for regular syncs so edits to existing runs are
+refreshed. On a Strava 429 response, the importer waits for the next 15-minute
+window and retries. Daily quota exhaustion stops the import; rerun with
+`--resume` after the daily quota resets. An interrupted run does not mean all
+history has been imported.
+
+Strava run descriptions override defaults when they include a line like `Shoe: Skyflow`. Shoe pair history lives in the tracked `shoes.json`; the SQLite cache is rebuildable. The committed database contains runs from May 11, 2026 onward.
+
+Easy runs default to Black Evo SL. The older Evo SL and Skyflow are marked
+`retired: true` as inventory status; historical runs can still use those pairs.
+An unknown `start_date` may be null. Set `retired_date` only when its actual date
+is known. Retirement status does not change workout defaults: long runs and
+unclassified runs still default to Skyflow unless you edit those entries.
 
 ## iMessage (macOS only)
 
@@ -47,7 +62,7 @@ The Messages app must be configured and macOS may ask for automation permission.
 
 ## Important
 
-- `.env`, `tokens.json`, `shoes.json`, SQLite files, logs, and virtualenv are ignored by Git.
+- `.env`, `tokens.json`, SQLite sidecar files, logs, and virtualenv are ignored by Git. `shoes.json` and `shoe_tracker.db` are intentionally tracked; the database contains activity names, descriptions, dates, mileage, and gear IDs visible to repository readers.
 - The repository is public. **Never commit Strava tokens or your API secret.**
 - Run pagination is supported; Strava rate limits may interrupt a large backfill.
 - This is a clean implementation based on our conversation, not a byte-for-byte copy of the user's existing local project.
