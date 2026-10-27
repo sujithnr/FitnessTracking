@@ -67,3 +67,33 @@ The Messages app must be configured and macOS may ask for automation permission.
 - Run pagination is supported; Strava rate limits may interrupt a large backfill.
 - This is a clean implementation based on our conversation, not a byte-for-byte copy of the user's existing local project.
 - No interval analytics are included.
+
+## Shoe dashboard
+
+The responsive dashboard in `docs/` shows physical-pair mileage, active/retired
+status, the last 28 days, recent runs, and the saved data's last sync time. Miles
+without a matching pair are shown separately and still count toward overall
+mileage. Totals cover the imported history beginning May 11, 2026, rather than
+claiming to represent a shoe's entire lifetime. No wear threshold is assumed.
+
+```bash
+python3 build_dashboard.py
+python3 -m http.server 8000 --directory docs
+```
+
+The exporter uses only the Python standard library and reads SQLite without
+modifying it. It publishes dates, distances, shoe names, and aggregate mileage;
+it excludes activity descriptions, activity IDs, gear IDs, and credentials.
+
+To publish, in GitHub **Settings → Pages → Build and deployment**, choose
+**GitHub Actions** as the source. The **Publish shoe dashboard** workflow deploys
+on relevant pushes to `main`, or via **Actions → Publish shoe dashboard → Run
+workflow**. It needs no Strava secrets. Deployments export data from the committed
+database; this workflow does **not** schedule Strava imports. After a sync, commit
+and push the updated database to rebuild the dashboard.
+
+For a Mac desktop widget (macOS Sonoma or later), open the published dashboard in
+Safari and choose **File → Open in Dashboard**, then select **Your rotation**.
+macOS controls widget refresh timing. The page reloads the published dataset every
+15 minutes while active, when revisited, or when its refresh button is clicked;
+these refreshes do not fetch new Strava activity.
